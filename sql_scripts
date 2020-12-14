@@ -1,0 +1,65 @@
+СОЗДАНИЕ СХЕМЫ И ТАБЛИЦ
+
+sudo mysql -u root -p
+
+create database institute;
+use institute;
+
+create table course
+     (
+     course_id int auto_increment primary key,
+     course_title varchar(100) not null,
+	teacher_id int,
+	student_id int,
+	constraint fk_teacher foreign key(teacher_id) references teacher(teacher_id),
+	constraint fk_student foreign key(student_id) references student(student_id)
+     );
+
+create table student 
+( student_id int auto_increment primary key, 
+first_name varchar(50), last_name varchar(100), 
+group_id int,
+constraint fk_groups foreign key (group_id) references groups(group_id)
+ );
+
+create table groups ( group_id int auto_increment primary key, name varchar(50) );
+
+create table teacher 
+     (
+     teacher_id int auto_increment primary key,
+     first_name varchar(100),
+     last_name varchar(100),
+     email varchar(50)
+     );
+
+create table marks ( marks_id int auto_increment primary key, m1 int, 
+m2 int, 
+m3 int, 
+student_id int,
+course_id int,
+constraint fk_student2 foreign key (student_id) references student(student_id),
+constraint fk_course foreign key (course_id) references course(course_id)
+);
+
+insert into marks values(1, 5, 4, 5, 1, 1);
+insert into teacher values( 1, 'Vasiliy', 'Petrov', 'some@gmail.com');
+insert into groups values(1, 'tigers');
+insert into groups values(2, 'cats');
+insert into course values(1, 'Programming', 1, 1);
+insert into student values(1, 'ivan', 'ivanov', 1);
+insert into student values(2, 'fedor', 'fedorenko', 2);
+insert into student values(3, 'fedor2', 'fedorenko2', 2);
+insert into marks values(2, 5, 5, 5, 2, 1);
+
+1.для выборки всех преподавателей на курсах, у которых учатся больше 2000 студентов;
+select teacher.first_name, teacher.last_name from teacher inner join course inner join student on course.teacher_id=teacher.teacher_id and course.student_id=student.student_id where (
+select count(teacher.teacher_id) from teacher, course, student where teacher.teacher_id=course.teacher_id and student.student_id=course.student_id)>2000;
+
+2.для выборки студентов, у которых по курсу 'Programming' средняя оценка > 4, и отсортировать их по фамилии, имени;
+select student.last_name, student.first_name from student inner join course inner join marks on (marks.course_id=course.course_id and course.student_id=student.student_id) where (select (marks.m1+marks.m2+marks.m3)/3 from marks where marks.student_id=student.student_id and marks.course_id=course.course_id)>4 group by course.course_title, student.last_name, student.first_name having course.course_title='Programming';
+
+3.запрос, который выведет количество отличников, количество студентов в каждой группе.
+select * from (select groups.group_id, count(*) as total_students from student, groups where groups.group_id = student.group_id group by groups.group_id) all_st left join (select s.group_id, count(*) as otlichnikov from student s inner join groups g inner join marks m on s.group_id=g.group_id and m.student_id=s.student_id group by s.group_id, m.m1, m.m2, m.m3 having ((m.m1+m.m2+m.m3)/3)=5) as otl on all_st.group_id=otl.group_id;
+
+
+
